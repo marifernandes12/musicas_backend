@@ -1,13 +1,13 @@
 
-import express from "express"
-import cors from "cors"
-import mysql2 from "mysql2"
-import "dotenv/config"
+import express from "express";
+import cors from "cors";
+import mysql2 from "mysql2";
+import "dotenv/config";
 
-const app = express()
+const app = express();
 
-app.use(express.json())
-app.use(cors())
+app.use(express.json());
+app.use(cors());
 
 
 const sql = mysql2.createPool({
@@ -15,26 +15,87 @@ const sql = mysql2.createPool({
     user: process.env.USUARIO_BANCO,
     password: process.env.SENHA_BANCO,
     database: process.env.NOME_BANCO
-})
+});
 
 app.get("/", (request, response) => {
-    const  comandoSelect  = "SELECT * FROM musicas_marianasilva"
+    const comandoSelect = "SELECT * FROM musicas_marianasilva";
 
-    sql.query(comandoSelect, (error, data) => { 
-        
-        
-        if(error){
-          console.log(error)
-        return
+    sql.query(comandoSelect, (error, data) => {
+        if (error) {
+            console.log(error);
+            return response.status(500).json({
+                erro: "Erro ao listar músicas"
+            });
         }
-        response.json(data)
-       
-    })
- })
+
+        response.json(data);
+    });
+});
+
+
+app.get("/:id", (request, response) => {
+    const { id } = request.params;
+
+    const comandoSelect =
+        "SELECT * FROM musicas_marianasilva WHERE id = ?";
+
+    sql.query(comandoSelect, [id], (error, data) => {
+        if (error) {
+            console.log(error);
+            return response.status(500).json({
+                erro: "Erro ao buscar música"
+            });
+        }
+
+        if (data.length === 0) {
+            return response.status(404).json({
+                erro: "Música não encontrada"
+            });
+        }
+
+        response.json(data[0]);
+    });
+});
+
+
+app.put("/:id", (request, response) => {
+    const { id } = request.params;
+
+    const { titulo, artista, genero, ano, duracao } = request.body;
+
+    const comandoUpdate = `
+        UPDATE musicas_marianasilva
+        SET titulo = ?, artista = ?, genero = ?, ano = ?, duracao = ?
+        WHERE id = ?
+    `;
+
+    sql.query(
+        comandoUpdate,
+        [titulo, artista, genero, ano, duracao, id],
+        (error, data) => {
+            if (error) {
+                console.log(error);
+                return response.status(500).json({
+                    erro: "Erro ao atualizar música"
+                });
+            }
+
+            if (data.affectedRows === 0) {
+                return response.status(404).json({
+                    erro: "Música não encontrada ou nenhuma alteração realizada"
+                });
+            }
+
+            response.json({
+                mensagem: "Música atualizada com sucesso!"
+            });
+        }
+    );
+});
+
 
 app.listen(3000, () => {
-    console.log ("Servidor online")
-})
+    console.log("Servidor online");
+});
 
-export default app
-
+export default app;
