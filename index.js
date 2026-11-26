@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import mysql2 from "mysql2";
@@ -26,17 +25,12 @@ sql.getConnection((error, connection) => {
     connection.release();
 });
 
-
 app.get("/", (request, response) => {
-
-    const comandoSelect =
-        "SELECT * FROM musicas_marianasilva";
+    const comandoSelect = "SELECT * FROM musicas_marianasilva";
 
     sql.query(comandoSelect, (error, data) => {
-
         if (error) {
             console.log(error);
-
             return response.status(500).json({
                 erro: "Erro ao listar músicas"
             });
@@ -46,20 +40,10 @@ app.get("/", (request, response) => {
     });
 });
 
-
 app.post("/cadastrar", (request, response) => {
-
     const { titulo, artista, genero, ano, duracao } = request.body;
 
-    console.log("Recebendo cadastro:", request.body);
-
-    if (
-        !titulo ||
-        !artista ||
-        !genero ||
-        ano == null ||
-        duracao == null
-    ) {
+    if (!titulo || !artista || !genero || ano == null || duracao == null) {
         return response.status(400).json({
             erro: "Preencha todos os campos!"
         });
@@ -75,18 +59,14 @@ app.post("/cadastrar", (request, response) => {
         comandoInsert,
         [titulo, artista, genero, ano, duracao],
         (error, resultado) => {
-
             if (error) {
-                console.log("ERRO NO CADASTRO:", error);
-
+                console.log(error);
                 return response.status(500).json({
                     erro: "Não foi possível cadastrar a música."
                 });
             }
 
-            console.log("Cadastro realizado. ID:", resultado.insertId);
-
-            return response.status(201).json({
+            response.status(201).json({
                 mensagem: "Música cadastrada com sucesso!",
                 id: resultado.insertId
             });
@@ -94,9 +74,7 @@ app.post("/cadastrar", (request, response) => {
     );
 });
 
-
-app.get("/:id", (request, response) => {
-
+app.get("/musica/:id", (request, response) => {
     const { id } = request.params;
 
     const comandoSelect = `
@@ -105,10 +83,8 @@ app.get("/:id", (request, response) => {
     `;
 
     sql.query(comandoSelect, [id], (error, data) => {
-
         if (error) {
             console.log(error);
-
             return response.status(500).json({
                 erro: "Erro ao buscar música"
             });
@@ -120,16 +96,19 @@ app.get("/:id", (request, response) => {
             });
         }
 
-        response.json(data[0]);
+        response.status(200).json(data[0]);
     });
 });
 
-
-app.put("/:id", (request, response) => {
-
+app.put("/editar/:id", (request, response) => {
     const { id } = request.params;
-
     const { titulo, artista, genero, ano, duracao } = request.body;
+
+    if (!titulo || !artista || !genero || ano == null || duracao == null) {
+        return response.status(400).json({
+            erro: "Preencha todos os campos!"
+        });
+    }
 
     const comandoUpdate = `
         UPDATE musicas_marianasilva
@@ -141,10 +120,8 @@ app.put("/:id", (request, response) => {
         comandoUpdate,
         [titulo, artista, genero, ano, duracao, id],
         (error, resultado) => {
-
             if (error) {
                 console.log(error);
-
                 return response.status(500).json({
                     erro: "Erro ao atualizar música"
                 });
@@ -156,31 +133,43 @@ app.put("/:id", (request, response) => {
                 });
             }
 
-            response.json({
+            response.status(200).json({
                 mensagem: "Música atualizada com sucesso!"
             });
         }
     );
 });
 
+app.delete("/apagar/:id", (request, response) => {
+    const { id } = request.params;
+
+    const comandoDelete = `
+        DELETE FROM musicas_marianasilva
+        WHERE id = ?
+    `;
+
+    sql.query(comandoDelete, [id], (error, resultado) => {
+        if (error) {
+            console.log(error);
+            return response.status(500).json({
+                erro: "Erro ao apagar música"
+            });
+        }
+
+        if (resultado.affectedRows === 0) {
+            return response.status(404).json({
+                erro: "Música não encontrada"
+            });
+        }
+
+        response.status(200).json({
+            mensagem: "Música apagada com sucesso!"
+        });
+    });
+});
 
 app.listen(3000, () => {
     console.log("Servidor online na porta 3000");
 });
 
 export default app;
-
-app.delete("/apagar/:id", (request, response) => {
-    const { id } = request.params
-
-    const comandoDelete = "DELETE FROM musicas_marianasilva WHERE id = ?"
-
-    sql.query(comandoDelete, [id], (error) => {
-        if (error) {
-            console.log(error)
-            return
-        }
-
-        response.json({ mensagem: "Música apagada com sucesso!" })
-    })
-})
